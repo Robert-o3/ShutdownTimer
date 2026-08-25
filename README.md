@@ -2,6 +2,9 @@
 
 A sleek, modular application for scheduling system shutdowns, built with Python and CustomTkinter.
 
+## DOWNLOAD
+[![Download Latest Release](https://img.shields.io/badge/Download-Latest_Release-blue.svg)](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME/releases/latest)
+
 ## Getting Started (Development)
 To develop or run this project from source, you must isolate the dependencies using a virtual environment.
 
