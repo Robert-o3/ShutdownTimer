@@ -1,6 +1,8 @@
 import customtkinter as ctk
 import os
 import platform
+import sys
+import ctypes
 from PIL import Image
 
 ctk.set_appearance_mode("Dark")
@@ -13,57 +15,62 @@ class ModernShutdownApp(ctk.CTk):
         # --- Window Setup ---
         self.geometry("480x480")
         self.resizable(False, False)
-        self.configure(fg_color="#121212")
-
         self.overrideredirect(True)
         self.remaining_seconds = 0
         self.timer_id = None
         self.is_running = False
 
+        # --- Transparency for Rounded Corners ---
+        if platform.system() == "Windows":
+            self.wm_attributes("-transparentcolor", "#000001")
+            self.configure(fg_color="#000001")
+        elif platform.system() == "Darwin": # macOS
+            self.wm_attributes("-transparent", True)
+            self.configure(fg_color="systemTransparent")
+        else:
+            self.configure(fg_color="#121212") # Linux fallback
+
+        # Create the main rounded background frame
+        self.bg_frame = ctk.CTkFrame(self, fg_color="#121212", corner_radius=30) # Increased to 30 for a rounder look
+        self.bg_frame.pack(fill="both", expand=True)
+
         # --- Custom Title Bar ---
-        self.title_bar = ctk.CTkFrame(self, height=35, fg_color="#121212", corner_radius=0)
-        self.title_bar.pack(fill="x", side="top")
+        self.title_bar = ctk.CTkFrame(self.bg_frame, height=35, fg_color="transparent", corner_radius=0)
+        
+        # Added padx=15 and increased pady to pull the title bar inwards, away from the glitching corners
+        self.title_bar.pack(fill="x", side="top", pady=(10, 0), padx=15) 
 
         # Load and display custom icon image and text (expects 'app_icon.png' in folder)
         try:
             icon_image = ctk.CTkImage(light_image=Image.open("app_icon.png"), 
                                       dark_image=Image.open("app_icon.png"), 
                                       size=(20, 20))
-            self.icon_label = ctk.CTkLabel(
-                self.title_bar, 
-                image=icon_image, 
-                text=" Shutdown Timer", 
-                compound="left", 
-                font=("Segoe UI", 15, "bold"), 
-                text_color="#E0E0E0"
-            )
-            self.icon_label.pack(side="left", padx=15)
+            self.icon_label = ctk.CTkLabel(self.title_bar, image=icon_image, text=" Shutdown Timer", 
+                                           compound="left", font=("Segoe UI", 12, "bold"), text_color="#E0E0E0")
+            # Removed the extra left padding here since we added it to the title bar itself
+            self.icon_label.pack(side="left") 
         except Exception:
             # Fallback text if image isn't found yet
-            self.icon_label = ctk.CTkLabel(
-                self.title_bar, 
-                text="Shutdown Timer", 
-                font=("Segoe UI", 12, "bold"), 
-                text_color="#E0E0E0"
-            )
-            self.icon_label.pack(side="left", padx=15)
+            self.icon_label = ctk.CTkLabel(self.title_bar, text="Shutdown Timer", 
+                                           font=("Segoe UI", 12, "bold"), text_color="#E0E0E0")
+            self.icon_label.pack(side="left")
 
         # Close Button
         self.close_btn = ctk.CTkButton(self.title_bar, text="✕", width=40, height=35,
                                        fg_color="transparent", hover_color="#7a4b4b",
                                        text_color="#E0E0E0", font=("Arial", 16),
-                                       command=self.destroy, corner_radius=0)
+                                       command=self.destroy, corner_radius=10)
         self.close_btn.pack(side="right")
 
         # Minimize Button
         self.min_btn = ctk.CTkButton(self.title_bar, text="—", width=40, height=35,
                                      fg_color="transparent", hover_color="#333333",
                                      text_color="#E0E0E0", font=("Arial", 16, "bold"),
-                                     command=self.minimize_window, corner_radius=0)
-        self.min_btn.pack(side="right")
+                                     command=self.minimize_window, corner_radius=10)
+        self.min_btn.pack(side="right", padx=(0, 5))
 
         # --- Main UI Panel ---
-        self.glass_frame = ctk.CTkFrame(self, fg_color="transparent") 
+        self.glass_frame = ctk.CTkFrame(self.bg_frame, fg_color="transparent") 
         self.glass_frame.pack(fill="both", expand=True, padx=15, pady=(0, 15))
         
         self.inner_panel = ctk.CTkFrame(self.glass_frame, corner_radius=25, fg_color="#1c1c1c")
@@ -102,7 +109,7 @@ class ModernShutdownApp(ctk.CTk):
 
         # --- Bind Dragging to Background elements ---
         draggable_widgets = [
-            self, self.title_bar, self.icon_label, self.glass_frame, 
+            self, self.bg_frame, self.title_bar, self.icon_label, self.glass_frame, 
             self.inner_panel, self.time_display, self.status_label, 
             self.input_container, self.h_label, self.m_label, self.s_label, 
             self.button_container
@@ -230,6 +237,40 @@ class ModernShutdownApp(ctk.CTk):
         if current_os == "Windows": os.system("shutdown /s /t 0")
         elif current_os in ["Linux", "Darwin"]: os.system("shutdown -h now")
 
+def is_admin():
+    """Check if the script is running with administrative privileges."""
+    try:
+        # Windows check
+        if platform.system() == "Windows":
+            return ctypes.windll.shell32.IsUserAnAdmin()
+        # Linux/macOS check
+        else:
+            return os.geteuid() == 0
+    except Exception:
+        return False
+
 if __name__ == "__main__":
+    if not is_admin():
+        # If not admin, attempt to relaunch with elevation
+        if platform.system() == "Windows":
+            # Ensure we use pythonw.exe to prevent the console from spawning on elevation
+            executable = sys.executable
+            if executable.lower().endswith("python.exe"):
+                executable = executable.replace("python.exe", "pythonw.exe")
+                
+            # Trigger the Windows UAC prompt (last parameter '0' requests it to run hidden)
+            ctypes.windll.shell32.ShellExecuteW(
+                None, "runas", executable, " ".join(sys.argv), None, 0
+            )
+            sys.exit()
+        else:
+            print("Please run this application as root/sudo to enable shutdown capabilities.")
+            sys.exit()
+            
+    # Force-hide the console window programmatically just in case it still flashes
+    if platform.system() == "Windows":
+        ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
+        
+    # If we are admin, run the app normally
     app = ModernShutdownApp()
     app.mainloop()
