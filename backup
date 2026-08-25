@@ -1,0 +1,112 @@
+import tkinter as tk
+from tkinter import messagebox
+import os
+import platform
+
+class ShutdownTimerApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Shutdown Timer")
+        self.root.geometry("320x250")
+        self.root.resizable(False, False)
+        
+        self.remaining_seconds = 0
+        self.timer_id = None
+        
+        # --- UI Setup ---
+        
+        # Instructions Label
+        tk.Label(root, text="Set Shutdown Timer:", font=("Arial", 12, "bold")).pack(pady=10)
+        
+        # Frame for Inputs
+        input_frame = tk.Frame(root)
+        input_frame.pack(pady=5)
+        
+        # Hours, Minutes, Seconds labels and entries
+        tk.Label(input_frame, text="Hrs").grid(row=0, column=0)
+        self.hours_var = tk.StringVar(value="0")
+        tk.Entry(input_frame, textvariable=self.hours_var, width=5, justify="center").grid(row=1, column=0, padx=5)
+        
+        tk.Label(input_frame, text="Min").grid(row=0, column=1)
+        self.mins_var = tk.StringVar(value="0")
+        tk.Entry(input_frame, textvariable=self.mins_var, width=5, justify="center").grid(row=1, column=1, padx=5)
+        
+        tk.Label(input_frame, text="Sec").grid(row=0, column=2)
+        self.secs_var = tk.StringVar(value="0")
+        tk.Entry(input_frame, textvariable=self.secs_var, width=5, justify="center").grid(row=1, column=2, padx=5)
+        
+        # Countdown Display
+        self.display_label = tk.Label(root, text="00:00:00", font=("Courier", 24, "bold"), fg="blue")
+        self.display_label.pack(pady=15)
+        
+        # Frame for Buttons
+        btn_frame = tk.Frame(root)
+        btn_frame.pack(pady=5)
+        
+        self.start_btn = tk.Button(btn_frame, text="Start", width=10, bg="green", fg="white", command=self.start_timer)
+        self.start_btn.grid(row=0, column=0, padx=10)
+        
+        self.cancel_btn = tk.Button(btn_frame, text="Cancel", width=10, bg="red", fg="white", state=tk.DISABLED, command=self.cancel_timer)
+        self.cancel_btn.grid(row=0, column=1, padx=10)
+
+    def start_timer(self):
+        try:
+            # Parse inputs (treat empty as 0)
+            h = int(self.hours_var.get()) if self.hours_var.get() else 0
+            m = int(self.mins_var.get()) if self.mins_var.get() else 0
+            s = int(self.secs_var.get()) if self.secs_var.get() else 0
+            
+            self.remaining_seconds = (h * 3600) + (m * 60) + s
+            
+            if self.remaining_seconds <= 0:
+                messagebox.showerror("Error", "Please enter a time greater than zero.")
+                return
+            
+            # Update UI state
+            self.start_btn.config(state=tk.DISABLED)
+            self.cancel_btn.config(state=tk.NORMAL)
+            
+            # Start the countdown loop
+            self.update_timer()
+            
+        except ValueError:
+            messagebox.showerror("Error", "Please enter valid numbers.")
+
+    def update_timer(self):
+        if self.remaining_seconds > 0:
+            # Calculate display time
+            mins, secs = divmod(self.remaining_seconds, 60)
+            hours, mins = divmod(mins, 60)
+            
+            # Format and update label
+            time_string = f"{hours:02d}:{mins:02d}:{secs:02d}"
+            self.display_label.config(text=time_string)
+            
+            # Decrement and schedule next update in 1000ms (1 second)
+            self.remaining_seconds -= 1
+            self.timer_id = self.root.after(1000, self.update_timer)
+        else:
+            self.display_label.config(text="00:00:00")
+            self.execute_shutdown()
+
+    def cancel_timer(self):
+        if self.timer_id is not None:
+            self.root.after_cancel(self.timer_id)
+            self.timer_id = None
+            
+        self.display_label.config(text="00:00:00")
+        self.start_btn.config(state=tk.NORMAL)
+        self.cancel_btn.config(state=tk.DISABLED)
+        self.remaining_seconds = 0
+
+    def execute_shutdown(self):
+        current_os = platform.system()
+        if current_os == "Windows":
+            os.system("shutdown /s /t 0")
+        elif current_os in ["Linux", "Darwin"]:
+            os.system("shutdown -h now")
+
+if __name__ == "__main__":
+    app_window = tk.Tk()
+    app = ShutdownTimerApp(app_window)
+    app_window.mainloop()
