@@ -24,16 +24,28 @@ class ModernShutdownApp(ctk.CTk):
         self.title_bar = ctk.CTkFrame(self, height=35, fg_color="#121212", corner_radius=0)
         self.title_bar.pack(fill="x", side="top")
 
-        # Load and display custom icon image instead of text (expects 'app_icon.png' in folder)
+        # Load and display custom icon image and text (expects 'app_icon.png' in folder)
         try:
             icon_image = ctk.CTkImage(light_image=Image.open("app_icon.png"), 
                                       dark_image=Image.open("app_icon.png"), 
                                       size=(20, 20))
-            self.icon_label = ctk.CTkLabel(self.title_bar, image=icon_image, text="")
+            self.icon_label = ctk.CTkLabel(
+                self.title_bar, 
+                image=icon_image, 
+                text=" Shutdown Timer", 
+                compound="left", 
+                font=("Segoe UI", 15, "bold"), 
+                text_color="#E0E0E0"
+            )
             self.icon_label.pack(side="left", padx=15)
         except Exception:
             # Fallback text if image isn't found yet
-            self.icon_label = ctk.CTkLabel(self.title_bar, text="SHUTDOWN", font=("Arial", 11, "bold"), text_color="#888888")
+            self.icon_label = ctk.CTkLabel(
+                self.title_bar, 
+                text="Shutdown Timer", 
+                font=("Segoe UI", 12, "bold"), 
+                text_color="#E0E0E0"
+            )
             self.icon_label.pack(side="left", padx=15)
 
         # Close Button
