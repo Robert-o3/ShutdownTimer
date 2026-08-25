@@ -3,7 +3,7 @@
 A sleek, modular application for scheduling system shutdowns, built with Python and CustomTkinter.
 
 ## DOWNLOAD
-[![Download Latest Release](https://img.shields.io/badge/Download-Latest_Release-blue.svg)](https://github.com/Robert-o3/ShutdownTimer/releases/latest/download/Shutdown_Timer.exe)
+[![Download Latest Release](https://img.shields.io/badge/Download-Latest_Release-blue.svg)](https://github.com/Robert-o3/ShutdownTimer/releases/download/v1.2/Shutdown_Timer.exe)
 
 [![Download Source Code](https://img.shields.io/badge/Download-Source_Code-red.svg)](https://github.com/Robert-o3/ShutdownTimer/archive/refs/heads/main.zip)
 
